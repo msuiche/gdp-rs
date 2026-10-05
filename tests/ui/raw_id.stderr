@@ -6,8 +6,8 @@ error[E0308]: mismatched types
   |         |
   |         arguments to this function are incorrect
   |
-  = note: expected reference `&gdp::Named<'_, fixture::ProjectId>`
-             found reference `&fixture::ProjectId`
+  = note: expected reference `&gdp::Named<'_, ProjectId>`
+             found reference `&ProjectId`
 note: function defined here
  --> tests/ui/fixture/mod.rs
   |

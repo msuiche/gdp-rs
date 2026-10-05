@@ -2,7 +2,7 @@ error[E0308]: mismatched types
  --> tests/ui/missing_plan_check.rs:8:34
   |
 8 |         set_protection(&project, admin);
-  |         --------------           ^^^^^ expected `And<UserIsProjectAdmin<'_, '_>, ...>`, found `UserIsProjectAdmin<'_, '_>`
+  |         --------------           ^^^^^ expected `And<UserIsProjectAdmin<'_, '_>, _>`, found `UserIsProjectAdmin<'_, '_>`
   |         |
   |         arguments to this function are incorrect
   |

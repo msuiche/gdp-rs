@@ -18,16 +18,26 @@ jobs:
           components: clippy, rustfmt
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
-      - run: cargo test
+      - run: cargo test --lib --test runtime --examples
+      - run: cargo test --doc
       - run: cargo build --no-default-features
       - run: cargo build --no-default-features --features alloc
       - run: cargo run --example password_protection
       - run: cargo run --example justified
+
+  # Compiler diagnostics change between releases, so the pinned `.stderr`
+  # snapshots are checked against one toolchain. Bump it together with a
+  # `TRYBUILD=overwrite cargo +<version> test --test ui` run.
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.0
+      - run: cargo test --test ui
 
   msrv:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85
-      # The UI suite pins stable's diagnostics, so MSRV runs everything else.
       - run: cargo test --lib --test runtime --examples
