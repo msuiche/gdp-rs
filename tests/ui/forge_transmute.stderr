@@ -1,0 +1,11 @@
+error: usage of an `unsafe` block
+ --> tests/ui/forge_transmute.rs:8:50
+  |
+8 |         let forged: UserIsProjectAdmin<'_, '_> = unsafe { core::mem::transmute(()) };
+  |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+note: the lint level is defined here
+ --> tests/ui/forge_transmute.rs:2:11
+  |
+2 | #![forbid(unsafe_code)]
+  |           ^^^^^^^^^^^

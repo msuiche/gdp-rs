@@ -1,0 +1,29 @@
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/swap_named_values.rs:9:13
+  |
+6 |     gdp::name2(UserId(1), ProjectId(1), |user, mut project| {
+  |                                                ----------- `project` declared here, outside of the closure body
+7 |         let proof = admin::check(&user, &project).unwrap();
+8 |         gdp::name(ProjectId(2), |mut other| {
+  |                                  --------- `other` is a reference that is only valid in the closure body
+9 |             std::mem::swap(&mut project, &mut other);
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `other` escapes the closure body here
+  |
+  = note: requirement occurs because of a mutable reference to `gdp::Named<'_, fixture::ProjectId>`
+  = note: mutable references are invariant over their type parameter
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/swap_named_values.rs:9:13
+  |
+6 |     gdp::name2(UserId(1), ProjectId(1), |user, mut project| {
+  |                                                -----------
+  |                                                |
+  |                                                `project` is a reference that is only valid in the closure body
+  |                                                has type `gdp::Named<'1, fixture::ProjectId>`
+...
+9 |             std::mem::swap(&mut project, &mut other);
+  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |             |
+  |             `project` escapes the closure body here
+  |             argument requires that `'1` must outlive `'static`

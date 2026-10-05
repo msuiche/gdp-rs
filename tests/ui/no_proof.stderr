@@ -1,0 +1,15 @@
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+ --> tests/ui/no_proof.rs:7:9
+  |
+7 |         disable_protection(&project);
+  |         ^^^^^^^^^^^^^^^^^^---------- argument #2 of type `UserIsProjectAdmin<'_, '_>` is missing
+  |
+note: function defined here
+ --> tests/ui/fixture/mod.rs
+  |
+  | pub fn disable_protection<'u, 'p>(_project: &Named<'p, ProjectId>, _proof: UserIsProjectAdmin<'u, 'p>) {}
+  |        ^^^^^^^^^^^^^^^^^^                                          ----------------------------------
+help: provide the argument
+  |
+7 |         disable_protection(&project, /* UserIsProjectAdmin<'_, '_> */);
+  |                                    ++++++++++++++++++++++++++++++++++

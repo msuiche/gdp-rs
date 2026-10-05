@@ -1,0 +1,10 @@
+error[E0624]: associated function `axiom` is private
+ --> tests/ui/forge_axiom_outside.rs:7:58
+  |
+7 |         disable_protection(&project, UserIsProjectAdmin::axiom());
+  |                                                          ^^^^^ private associated function
+  |
+ ::: tests/ui/fixture/mod.rs
+  |
+  |     gdp::proof! { pub struct UserIsProjectAdmin<'u, 'p>(UserId, ProjectId); }
+  |     ------------------------------------------------------------------------- private associated function defined here

@@ -1,0 +1,28 @@
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/justified_wrong_map.rs:9:21
+  |
+7 |     gdp::justified::with_map(&a, |a| {
+  |                                   - `a` declared here, outside of the closure body
+8 |         gdp::justified::with_map(&b, |b| {
+  |                                       - `b` is a reference that is only valid in the closure body
+9 |             let k = a.member(&1).unwrap();
+  |                     ^^^^^^^^^^^^ `b` escapes the closure body here
+  |
+  = note: requirement occurs because of the type `JMap<'_, '_, BTreeMap<i32, &str>>`, which makes the generic argument `'_` invariant
+  = note: the struct `JMap<'ph, 'm, M>` is invariant over the parameter `'ph`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error[E0521]: borrowed data escapes outside of closure
+  --> tests/ui/justified_wrong_map.rs:10:13
+   |
+ 7 |     gdp::justified::with_map(&a, |a| {
+   |                                   -
+   |                                   |
+   |                                   `a` is a reference that is only valid in the closure body
+   |                                   has type `JMap<'1, '_, BTreeMap<i32, &str>>`
+...
+10 |             b.get(k);
+   |             ^^^^^^^^
+   |             |
+   |             `a` escapes the closure body here
+   |             argument requires that `'1` must outlive `'static`

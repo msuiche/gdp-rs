@@ -1,0 +1,13 @@
+error[E0308]: mismatched types
+ --> tests/ui/view_is_not_manage.rs:8:38
+  |
+8 |         disable_protection(&project, proof);
+  |         ------------------           ^^^^^ expected `UserIsProjectAdmin<'_, '_>`, found `UserHasProjectAccess<'_, '_>`
+  |         |
+  |         arguments to this function are incorrect
+  |
+note: function defined here
+ --> tests/ui/fixture/mod.rs
+  |
+  | pub fn disable_protection<'u, 'p>(_project: &Named<'p, ProjectId>, _proof: UserIsProjectAdmin<'u, 'p>) {}
+  |        ^^^^^^^^^^^^^^^^^^                                          ----------------------------------

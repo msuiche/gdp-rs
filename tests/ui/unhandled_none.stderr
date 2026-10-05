@@ -1,0 +1,19 @@
+error[E0308]: mismatched types
+ --> tests/ui/unhandled_none.rs:8:38
+  |
+8 |         disable_protection(&project, proof);
+  |         ------------------           ^^^^^ expected `UserIsProjectAdmin<'_, '_>`, found `Option<UserIsProjectAdmin<'_, '_>>`
+  |         |
+  |         arguments to this function are incorrect
+  |
+  = note: expected struct `UserIsProjectAdmin<'_, '_>`
+               found enum `Option<UserIsProjectAdmin<'_, '_>>`
+note: function defined here
+ --> tests/ui/fixture/mod.rs
+  |
+  | pub fn disable_protection<'u, 'p>(_project: &Named<'p, ProjectId>, _proof: UserIsProjectAdmin<'u, 'p>) {}
+  |        ^^^^^^^^^^^^^^^^^^                                          ----------------------------------
+help: consider using `Option::expect` to unwrap the `Option<UserIsProjectAdmin<'_, '_>>` value, panicking if the value is an `Option::None`
+  |
+8 |         disable_protection(&project, proof.expect("REASON"));
+  |                                           +++++++++++++++++

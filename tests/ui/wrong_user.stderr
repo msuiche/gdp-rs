@@ -1,0 +1,28 @@
+error: lifetime may not live long enough
+ --> tests/ui/wrong_user.rs:7:21
+  |
+6 |     gdp::name3(UserId(1), UserId(2), ProjectId(1), |alice, bob, project| {
+  |                                                     -----  --- has type `gdp::Named<'2, fixture::UserId>`
+  |                                                     |
+  |                                                     has type `gdp::Named<'1, fixture::UserId>`
+7 |         let proof = admin::check(&alice, &project).unwrap();
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'2` must outlive `'1`
+  |
+  = note: requirement occurs because of the type `gdp::Named<'_, fixture::UserId>`, which makes the generic argument `'_` invariant
+  = note: the struct `gdp::Named<'id, T>` is invariant over the parameter `'id`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+ --> tests/ui/wrong_user.rs:8:9
+  |
+6 |     gdp::name3(UserId(1), UserId(2), ProjectId(1), |alice, bob, project| {
+  |                                                     -----  --- has type `gdp::Named<'2, fixture::UserId>`
+  |                                                     |
+  |                                                     has type `gdp::Named<'1, fixture::UserId>`
+7 |         let proof = admin::check(&alice, &project).unwrap();
+8 |         record_updated_by(&bob, &project, proof);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+  |
+  = note: requirement occurs because of the type `gdp::Named<'_, fixture::UserId>`, which makes the generic argument `'_` invariant
+  = note: the struct `gdp::Named<'id, T>` is invariant over the parameter `'id`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

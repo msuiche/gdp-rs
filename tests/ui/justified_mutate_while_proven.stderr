@@ -1,0 +1,11 @@
+error[E0502]: cannot borrow `m` as mutable because it is also borrowed as immutable
+ --> tests/ui/justified_mutate_while_proven.rs:6:34
+  |
+6 |     gdp::justified::with_map(&m, |jm| {
+  |     ------------------------ --  ^^^^ mutable borrow occurs here
+  |     |                        |
+  |     |                        immutable borrow occurs here
+  |     immutable borrow later used by call
+7 |         let k = jm.member(&1).unwrap();
+8 |         m.remove(&1);
+  |         - second borrow occurs due to use of `m` in closure

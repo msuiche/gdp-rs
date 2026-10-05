@@ -1,0 +1,28 @@
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/swapped_names.rs:9:32
+  |
+8 |         let proof = admin::check(&user, &first).unwrap();
+  |             ----- `proof` declared here, outside of the closure body
+9 |         gdp::name(id, |second| disable_protection(&second, proof));
+  |                        ------  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `second` escapes the closure body here
+  |                        |
+  |                        `second` is a reference that is only valid in the closure body
+  |
+  = note: requirement occurs because of the type `UserIsProjectAdmin<'_, '_>`, which makes the generic argument `'_` invariant
+  = note: the struct `UserIsProjectAdmin<'u, 'p>` is invariant over the parameter `'u`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/swapped_names.rs:9:32
+  |
+7 |     gdp::name2(UserId(1), id, |user, first| {
+  |                                      -----
+  |                                      |
+  |                                      `first` is a reference that is only valid in the closure body
+  |                                      has type `gdp::Named<'1, fixture::ProjectId>`
+8 |         let proof = admin::check(&user, &first).unwrap();
+9 |         gdp::name(id, |second| disable_protection(&second, proof));
+  |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |                                |
+  |                                `first` escapes the closure body here
+  |                                argument requires that `'1` must outlive `'static`

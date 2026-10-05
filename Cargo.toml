@@ -1,0 +1,31 @@
+[package]
+name = "gdp-rs"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Ghosts of Departed Proofs for Rust: compile-time authorization proofs with zero runtime cost"
+license = "MIT"
+repository = "https://github.com/msuiche/gdp-rs"
+readme = "README.md"
+keywords = ["authorization", "types", "proofs", "security", "no_std"]
+categories = ["rust-patterns", "no-std", "authentication"]
+
+[lib]
+name = "gdp"
+
+[features]
+default = ["std"]
+# `justified::JMap` over `BTreeMap`.
+alloc = []
+# `justified::JMap` over `HashMap` as well.
+std = ["alloc"]
+
+[dev-dependencies]
+trybuild = "1"
+
+[[example]]
+name = "password_protection"
+
+[[example]]
+name = "justified"
+required-features = ["std"]

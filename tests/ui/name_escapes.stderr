@@ -1,0 +1,12 @@
+error: lifetime may not live long enough
+ --> tests/ui/name_escapes.rs:3:39
+  |
+3 |     let _leaked = gdp::name(1u32, |n| n);
+  |                                    -- ^ returning this value requires that `'1` must outlive `'2`
+  |                                    ||
+  |                                    |return type of closure is gdp::Named<'2, u32>
+  |                                    has type `gdp::Named<'1, u32>`
+  |
+  = note: requirement occurs because of the type `gdp::Named<'_, u32>`, which makes the generic argument `'_` invariant
+  = note: the struct `gdp::Named<'id, T>` is invariant over the parameter `'id`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

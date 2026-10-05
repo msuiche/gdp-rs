@@ -1,0 +1,28 @@
+error: lifetime may not live long enough
+ --> tests/ui/wrong_project.rs:7:21
+  |
+6 |     gdp::name3(UserId(1), ProjectId(1), ProjectId(2), |user, a, b| {
+  |                                                              -  - has type `gdp::Named<'2, fixture::ProjectId>`
+  |                                                              |
+  |                                                              has type `gdp::Named<'1, fixture::ProjectId>`
+7 |         let proof = admin::check(&user, &a).unwrap();
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'2` must outlive `'1`
+  |
+  = note: requirement occurs because of the type `gdp::Named<'_, fixture::ProjectId>`, which makes the generic argument `'_` invariant
+  = note: the struct `gdp::Named<'id, T>` is invariant over the parameter `'id`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+ --> tests/ui/wrong_project.rs:8:9
+  |
+6 |     gdp::name3(UserId(1), ProjectId(1), ProjectId(2), |user, a, b| {
+  |                                                              -  - has type `gdp::Named<'2, fixture::ProjectId>`
+  |                                                              |
+  |                                                              has type `gdp::Named<'1, fixture::ProjectId>`
+7 |         let proof = admin::check(&user, &a).unwrap();
+8 |         disable_protection(&b, proof);
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+  |
+  = note: requirement occurs because of the type `gdp::Named<'_, fixture::ProjectId>`, which makes the generic argument `'_` invariant
+  = note: the struct `gdp::Named<'id, T>` is invariant over the parameter `'id`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

@@ -1,0 +1,5 @@
+error[E0451]: field `_ghost` of struct `admin::UserIsProjectAdmin` is private
+ --> tests/ui/forge_struct_literal.rs:7:59
+  |
+7 |         disable_protection(&project, UserIsProjectAdmin { _ghost: core::marker::PhantomData });
+  |                                                           ^^^^^^ private field

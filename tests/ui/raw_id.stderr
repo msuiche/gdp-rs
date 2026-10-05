@@ -1,0 +1,15 @@
+error[E0308]: mismatched types
+ --> tests/ui/raw_id.rs:8:28
+  |
+8 |         disable_protection(&ProjectId(1), proof);
+  |         ------------------ ^^^^^^^^^^^^^ expected `&Named<'_, ProjectId>`, found `&ProjectId`
+  |         |
+  |         arguments to this function are incorrect
+  |
+  = note: expected reference `&gdp::Named<'_, fixture::ProjectId>`
+             found reference `&fixture::ProjectId`
+note: function defined here
+ --> tests/ui/fixture/mod.rs
+  |
+  | pub fn disable_protection<'u, 'p>(_project: &Named<'p, ProjectId>, _proof: UserIsProjectAdmin<'u, 'p>) {}
+  |        ^^^^^^^^^^^^^^^^^^         -------------------------------

@@ -1,0 +1,17 @@
+error: lifetime may not live long enough
+ --> tests/ui/async_proof_escapes.rs:6:82
+  |
+6 |     let _stash = gdp::name2_async(UserId(1), ProjectId(1), async |user, project| admin::check(&user, &project)).await;
+  |                                                                   ----         - ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ returning this value requires that `'1` must outlive `'2`
+  |                                                                   |            |
+  |                                                                   |            return type of async closure `{async closure body@$DIR/tests/ui/async_proof_escapes.rs:6:82: 6:111}` contains a lifetime `'2`
+  |                                                                   has type `gdp::Named<'1, fixture::UserId>`
+
+error: lifetime may not live long enough
+ --> tests/ui/async_proof_escapes.rs:6:82
+  |
+6 |     let _stash = gdp::name2_async(UserId(1), ProjectId(1), async |user, project| admin::check(&user, &project)).await;
+  |                                                                         -------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ returning this value requires that `'3` must outlive `'4`
+  |                                                                         |      |
+  |                                                                         |      return type of async closure `{async closure body@$DIR/tests/ui/async_proof_escapes.rs:6:82: 6:111}` contains a lifetime `'4`
+  |                                                                         has type `gdp::Named<'3, fixture::ProjectId>`

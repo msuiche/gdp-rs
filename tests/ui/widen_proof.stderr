@@ -1,0 +1,15 @@
+error: lifetime may not live long enough
+ --> tests/ui/widen_proof.rs:9:5
+  |
+5 | fn widen<'a, 'b, 'p>(proof: UserIsProjectAdmin<'a, 'p>) -> UserIsProjectAdmin<'b, 'p>
+  |          --  -- lifetime `'b` defined here
+  |          |
+  |          lifetime `'a` defined here
+...
+9 |     proof
+  |     ^^^^^ function was supposed to return data with lifetime `'a` but it is returning data with lifetime `'b`
+  |
+  = help: consider adding the following bound: `'b: 'a`
+  = note: requirement occurs because of the type `admin::UserIsProjectAdmin<'_, '_>`, which makes the generic argument `'_` invariant
+  = note: the struct `admin::UserIsProjectAdmin<'u, 'p>` is invariant over the parameter `'u`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

@@ -1,0 +1,8 @@
+error: implementation of `FnOnce` is not general enough
+ --> tests/ui/unify_names.rs:9:5
+  |
+9 |     gdp::name2(UserId(1), ProjectId(1), body);
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ implementation of `FnOnce` is not general enough
+  |
+  = note: `for<'x> fn(gdp::Named<'x, fixture::UserId>, gdp::Named<'x, fixture::ProjectId>) {body}` must implement `FnOnce<(gdp::Named<'0, fixture::UserId>, gdp::Named<'1, fixture::ProjectId>)>`, for any two lifetimes `'0` and `'1`...
+  = note: ...but it actually implements `FnOnce<(gdp::Named<'2, fixture::UserId>, gdp::Named<'2, fixture::ProjectId>)>`, for some specific lifetime `'2`

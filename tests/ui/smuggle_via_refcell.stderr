@@ -1,0 +1,42 @@
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/smuggle_via_refcell.rs:9:10
+  |
+7 |     let stash = RefCell::new(None);
+  |         ----- `stash` declared here, outside of the closure body
+8 |     gdp::name2(UserId(1), ProjectId(1), |user, project| {
+  |                                          ---- `user` is a reference that is only valid in the closure body
+9 |         *stash.borrow_mut() = admin::check(&user, &project);
+  |          ^^^^^^^^^^^^^^^^^^ `user` escapes the closure body here
+  |
+  = note: requirement occurs because of the type `RefCell<Option<UserIsProjectAdmin<'_, '_>>>`, which makes the generic argument `Option<UserIsProjectAdmin<'_, '_>>` invariant
+  = note: the struct `RefCell<T>` is invariant over the parameter `T`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/smuggle_via_refcell.rs:9:10
+  |
+7 |     let stash = RefCell::new(None);
+  |         ----- `stash` declared here, outside of the closure body
+8 |     gdp::name2(UserId(1), ProjectId(1), |user, project| {
+  |                                                ------- `project` is a reference that is only valid in the closure body
+9 |         *stash.borrow_mut() = admin::check(&user, &project);
+  |          ^^^^^^^^^^^^^^^^^^ `project` escapes the closure body here
+  |
+  = note: requirement occurs because of the type `RefCell<Option<UserIsProjectAdmin<'_, '_>>>`, which makes the generic argument `Option<UserIsProjectAdmin<'_, '_>>` invariant
+  = note: the struct `RefCell<T>` is invariant over the parameter `T`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error[E0521]: borrowed data escapes outside of closure
+  --> tests/ui/smuggle_via_refcell.rs:12:38
+   |
+ 7 |     let stash = RefCell::new(None);
+   |         ----- `stash` declared here, outside of the closure body
+...
+11 |     gdp::name(ProjectId(2), |project| {
+   |                              ------- `project` is a reference that is only valid in the closure body
+12 |         disable_protection(&project, stash.borrow().unwrap());
+   |                                      ^^^^^^^^^^^^^^ `project` escapes the closure body here
+   |
+   = note: requirement occurs because of the type `RefCell<Option<UserIsProjectAdmin<'_, '_>>>`, which makes the generic argument `Option<UserIsProjectAdmin<'_, '_>>` invariant
+   = note: the struct `RefCell<T>` is invariant over the parameter `T`
+   = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

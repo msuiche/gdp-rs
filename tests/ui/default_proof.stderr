@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `UserIsProjectAdmin<'_, '_>: Default` is not satisfied
+ --> tests/ui/default_proof.rs:7:38
+  |
+7 |         disable_protection(&project, Default::default());
+  |                                      ^^^^^^^^^^^^^^^^^^ the trait `Default` is not implemented for `UserIsProjectAdmin<'_, '_>`
+  |
+help: consider annotating `UserIsProjectAdmin<'_, '_>` with `#[derive(Default)]`
+ --> src/lib.rs
+  |
+    +         #[derive(Default)]
+    |         $vis struct $Name<$($lt),+> {
+    |

@@ -1,0 +1,28 @@
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/smuggle_into_nested_scope.rs:8:41
+  |
+7 |         let proof = admin::check(&user, &project).unwrap();
+  |             ----- `proof` declared here, outside of the closure body
+8 |         gdp::name(ProjectId(2), |other| disable_protection(&other, proof));
+  |                                  -----  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `other` escapes the closure body here
+  |                                  |
+  |                                  `other` is a reference that is only valid in the closure body
+  |
+  = note: requirement occurs because of the type `UserIsProjectAdmin<'_, '_>`, which makes the generic argument `'_` invariant
+  = note: the struct `UserIsProjectAdmin<'u, 'p>` is invariant over the parameter `'u`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/smuggle_into_nested_scope.rs:8:41
+  |
+6 |     gdp::name2(UserId(1), ProjectId(1), |user, project| {
+  |                                                -------
+  |                                                |
+  |                                                `project` is a reference that is only valid in the closure body
+  |                                                has type `gdp::Named<'1, fixture::ProjectId>`
+7 |         let proof = admin::check(&user, &project).unwrap();
+8 |         gdp::name(ProjectId(2), |other| disable_protection(&other, proof));
+  |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |                                         |
+  |                                         `project` escapes the closure body here
+  |                                         argument requires that `'1` must outlive `'static`

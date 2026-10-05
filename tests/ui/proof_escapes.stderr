@@ -1,0 +1,25 @@
+error: lifetime may not live long enough
+ --> tests/ui/proof_escapes.rs:6:70
+  |
+6 |     let _stash = gdp::name2(UserId(1), ProjectId(1), |user, project| admin::check(&user, &project));
+  |                                                       ----         - ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ returning this value requires that `'1` must outlive `'2`
+  |                                                       |            |
+  |                                                       |            return type of closure is Option<UserIsProjectAdmin<'2, '_>>
+  |                                                       has type `gdp::Named<'1, fixture::UserId>`
+  |
+  = note: requirement occurs because of the type `UserIsProjectAdmin<'_, '_>`, which makes the generic argument `'_` invariant
+  = note: the struct `UserIsProjectAdmin<'u, 'p>` is invariant over the parameter `'u`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+ --> tests/ui/proof_escapes.rs:6:70
+  |
+6 |     let _stash = gdp::name2(UserId(1), ProjectId(1), |user, project| admin::check(&user, &project));
+  |                                                             -------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ returning this value requires that `'3` must outlive `'4`
+  |                                                             |      |
+  |                                                             |      return type of closure is Option<UserIsProjectAdmin<'_, '4>>
+  |                                                             has type `gdp::Named<'3, fixture::ProjectId>`
+  |
+  = note: requirement occurs because of the type `UserIsProjectAdmin<'_, '_>`, which makes the generic argument `'_` invariant
+  = note: the struct `UserIsProjectAdmin<'u, 'p>` is invariant over the parameter `'u`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
