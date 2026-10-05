@@ -1,0 +1,28 @@
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/justified_aligned_wrong_slice.rs:8:21
+  |
+5 |     gdp::justified::with_slice(&a, |a| {
+  |                                     -
+  |                                     |
+  |                                     `a` is a reference that is only valid in the closure body
+  |                                     has type `JSlice<'1, '_, i32>`
+...
+8 |             let i = b.index(0).unwrap();
+  |                     ^^^^^^^^^^
+  |                     |
+  |                     `a` escapes the closure body here
+  |                     argument requires that `'1` must outlive `'static`
+
+error[E0521]: borrowed data escapes outside of closure
+ --> tests/ui/justified_aligned_wrong_slice.rs:8:21
+  |
+6 |         let doubled = a.map(|_, x| x * 2);
+  |             ------- `doubled` declared here, outside of the closure body
+7 |         gdp::justified::with_slice(&b, |b| {
+  |                                         - `b` is a reference that is only valid in the closure body
+8 |             let i = b.index(0).unwrap();
+  |                     ^^^^^^^^^^^^^^^^^^^ `b` escapes the closure body here
+  |
+  = note: requirement occurs because of the type `gdp::justified::Index<'_>`, which makes the generic argument `'_` invariant
+  = note: the struct `gdp::justified::Index<'ph>` is invariant over the parameter `'ph`
+  = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance

@@ -293,3 +293,23 @@ fn ad_hoc_disjunction() {
         1
     );
 }
+
+#[test]
+fn justified_aligned_data() {
+    let v = ["a", "bbb", "cc"];
+    gdp::justified::with_slice(&v, |s| {
+        let mut lens = s.map(|_, x| x.len());
+        assert_eq!(lens.len(), 3);
+        let i = s.index(1).unwrap();
+        assert_eq!(lens[i], 3);
+        lens[i] += 1;
+        assert_eq!(*lens.get(i), 4);
+        assert_eq!(lens.iter().copied().collect::<Vec<_>>(), [1, 4, 2]);
+        let ok: Result<_, ()> = s.try_map(|i, x| Ok((i.get(), *x)));
+        assert_eq!(ok.unwrap()[i], (1, "bbb"));
+        let err = s.try_map(|i, _| if i.get() == 2 { Err("bad") } else { Ok(()) });
+        assert_eq!(err.err(), Some("bad"));
+        assert_eq!(format!("{:?}", lens), "Aligned([1, 4, 2])");
+        assert_eq!(lens.into_inner(), vec![1, 4, 2]);
+    });
+}

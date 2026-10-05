@@ -347,3 +347,112 @@ impl<T: fmt::Debug> fmt::Debug for JSlice<'_, '_, T> {
         f.debug_tuple("JSlice").field(&self.slice).finish()
     }
 }
+
+/// Owned data aligned with a [`JSlice`]: one element per index, under the
+/// same name `'ph`, so any [`Index<'ph>`] indexes it infallibly too.
+///
+/// Built only by [`JSlice::map`] and [`JSlice::try_map`], which is what
+/// guarantees the lengths match. Use it for adjacency lists, per-element
+/// results, or anything you would otherwise keep in a parallel `Vec`
+/// indexed by raw `usize`.
+///
+/// ```
+/// let words = ["gdp", "ghosts", "rust"];
+/// gdp::justified::with_slice(&words, |w| {
+///     let lens = w.map(|_, s| s.len());
+///     let longest = w.indices().max_by_key(|&i| lens[i]).unwrap();
+///     assert_eq!((w[longest], lens[longest]), ("ghosts", 6));
+/// });
+/// ```
+#[cfg(feature = "alloc")]
+pub struct Aligned<'ph, U> {
+    items: alloc::vec::Vec<U>,
+    brand: Brand<'ph>,
+}
+
+#[cfg(feature = "alloc")]
+impl<'ph, 's, T> JSlice<'ph, 's, T> {
+    /// Builds data aligned with this slice, one element per index.
+    pub fn map<U>(&self, mut f: impl FnMut(Index<'ph>, &'s T) -> U) -> Aligned<'ph, U> {
+        Aligned {
+            items: self.indices().map(|i| f(i, self.get(i))).collect(),
+            brand: PhantomData,
+        }
+    }
+
+    /// Fallible [`JSlice::map`]: the place to do validation once, up front.
+    pub fn try_map<U, E>(
+        &self,
+        mut f: impl FnMut(Index<'ph>, &'s T) -> Result<U, E>,
+    ) -> Result<Aligned<'ph, U>, E> {
+        Ok(Aligned {
+            items: self
+                .indices()
+                .map(|i| f(i, self.get(i)))
+                .collect::<Result<_, E>>()?,
+            brand: PhantomData,
+        })
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'ph, U> Aligned<'ph, U> {
+    /// The element at a checked index. Infallible.
+    #[inline(always)]
+    pub fn get(&self, i: Index<'ph>) -> &U {
+        // In bounds: built with exactly one element per index of the slice
+        // named 'ph, and never resized.
+        &self.items[i.index]
+    }
+
+    /// Mutable access at a checked index. Infallible.
+    #[inline(always)]
+    pub fn get_mut(&mut self, i: Index<'ph>) -> &mut U {
+        &mut self.items[i.index]
+    }
+
+    /// Number of elements (the length of the slice it is aligned with).
+    pub fn len(&self) -> usize {
+        self.items.len()
+    }
+
+    /// Whether it is empty.
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    /// Iterates over the elements in index order.
+    pub fn iter(&self) -> core::slice::Iter<'_, U> {
+        self.items.iter()
+    }
+
+    /// Unwraps the data, dropping its alignment evidence.
+    pub fn into_inner(self) -> alloc::vec::Vec<U> {
+        self.items
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'ph, U> ops::Index<Index<'ph>> for Aligned<'ph, U> {
+    type Output = U;
+
+    #[inline(always)]
+    fn index(&self, i: Index<'ph>) -> &U {
+        self.get(i)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<'ph, U> ops::IndexMut<Index<'ph>> for Aligned<'ph, U> {
+    #[inline(always)]
+    fn index_mut(&mut self, i: Index<'ph>) -> &mut U {
+        self.get_mut(i)
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<U: fmt::Debug> fmt::Debug for Aligned<'_, U> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("Aligned").field(&self.items).finish()
+    }
+}
