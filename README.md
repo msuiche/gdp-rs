@@ -92,9 +92,9 @@ What Rust costs you: names are lifetimes, so mistakes surface as lifetime errors
 
 - **Async scopes.** `name_async`, `name2_async`, `name3_async` take async closures (`AsyncFnOnce`, Rust 1.85+), so checks and sensitive calls can `.await` while names stay scoped.
 - **`policy!`**: the Rust spelling of gdp-ts's proof unions. Generates an enum with a `From` impl per variant, so `admin.into()` satisfies `CanViewProtection`, and a sensitive function can take `impl Into<CanViewProtection<'u, 'p>>`.
-- **Audit-ready proofs.** Every proof has a stable `Proof::KIND`, and `proof.reason()` reports which primitive proof satisfied a policy: `audit: read protection on acme because UserHasProjectAccess`. These are labels for logs, not evidence: anyone can implement `Proof`, so sensitive functions take concrete proof types, never `impl Proof`.
-- **Conjunction.** `admin.and(plan)` builds `And<A, B>`, so a function can demand several facts in one parameter.
-- **Implications with `axiom()`.** A trusted module can state "an Owner is always an Admin" once, as `impl From<UserIsProjectOwner> for UserIsProjectAdmin { fn from(_) -> Self { Self::axiom() } }`. `axiom` is private, like `prove`.
+- **Audit-ready proofs.** Every proof has a stable `Proof::KIND`, and `proof.reason()` reports which primitive proof satisfied a policy: `audit: read protection on acme because UserHasProjectAccess`. `Proof` is sealed, so a hand-written type cannot pose as a proof in those logs.
+- **Conjunction and disjunction.** `admin.and(plan)` builds `And<A, B>`, so a function can demand several facts in one parameter; `Or<A, B>` is an ad hoc policy when a named `policy!` would be overkill.
+- **Implications with `implies!`.** A trusted module states "an Owner is always an Admin" once: `gdp::implies!(UserIsProjectOwner<'u, 'p> => UserIsProjectAdmin<'u, 'p>);`, and callers write `owner.into()`. It expands to a `From` impl on the target's private `axiom()`, so only the target's trusted module can declare what implies it.
 - **Justified containers.** <a id="justified-containers"></a>A port of Matt Noonan's [`justified-containers`](https://hackage.haskell.org/package/justified-containers), which preceded GDP: `with_map(&map, |m| …)` names a map; `m.member(&k)` returns a `Key` with evidence of membership; `m.get(key)` returns `&V`, not `Option<&V>`. Keys from one map are rejected by another, and the map cannot be mutated (inserted into or removed from) while evidence is alive. Evidence carries the entry it found, so `get` is a field read with no second lookup, and it stays correct even if a key's `Ord`/`Hash` drifts through interior mutability. Works with `BTreeMap` (only `Ord` needed) and `HashMap` (only `Hash + Eq` needed). `with_slice` does the same for indices: `s.index(i)?` checks bounds once, then `s[i]` cannot go out of bounds, and an index of one slice is rejected by another. `cargo run --example justified`.
 - **`no_std`.** The core and justified slices need only `core`. Justified maps need `alloc` (`BTreeMap`) or `std` (`HashMap` too).
 - **The mistakes catalogue as a test suite.** Every mistake below is a [`trybuild`](https://crates.io/crates/trybuild) compile-fail test with its compiler output pinned, and the honest path is a must-compile test under `#![forbid(unsafe_code)]`.
@@ -124,6 +124,8 @@ Each of these is a file in [`tests/ui/`](tests/ui/) with a pinned `.stderr`:
 | A callback that asks for two names to be the same | `FnOnce` not general enough |
 | Coercing a proof to a different name (variance) | lifetime mismatch |
 | `Default::default()` as a proof | `E0277` |
+| Implementing `Proof` for a hand-written type | `E0277` sealed |
+| Declaring an implication outside the target's trusted module | `E0624` |
 | A key of one justified map used on another | `E0521` |
 | Mutating a map while holding evidence about its keys | `E0502` borrow conflict |
 | An index of one justified slice used on another | `E0521` |
@@ -153,7 +155,7 @@ The [gdp-ts recipe](https://github.com/rauchg/gdp-ts/blob/main/skills/gdp-ts/ref
 ## What this does not guarantee
 
 - **Dependencies are a trust boundary.** `#![forbid(unsafe_code)]` covers your crate, not your dependencies. A dependency with an unsound "safe" API (say, a generic `conjure<T: Copy>()` built on `mem::zeroed`), or an external `macro_rules!` that expands to `unsafe`, can produce any zero-sized value, proofs included. Both were confirmed with probes. This is the same boundary as `unsafeCoerce` in Haskell; audit `unsafe` in your dependency tree (e.g. with `cargo geiger`).
-- **`Proof` is an open trait.** `KIND` and `reason()` are for audit logs. Never accept `impl Proof` or `dyn` anything as authorization; demand the concrete proof type.
+- **Demand concrete proof types.** `Proof` is sealed (behind a `#[doc(hidden)] __private` path, which is greppable but nameable), and `impl Proof` only says "some proof". Sensitive functions should name the exact proof they need.
 - **The checks themselves are still code you wrote.** gdp-rs guarantees that the check ran, about the right values, on every path to the sensitive call. It does not guarantee that the check is correct. Test the trusted modules; they are small.
 - **Trusted modules include their children.** Rust privacy lets child modules call a parent's private functions. Keep proof modules as leaves.
 - **Stale facts about external state.** A proof says the fact held when it was checked. Names are scoped to the request, so proofs are too. Use transactions where a race between check and use matters.

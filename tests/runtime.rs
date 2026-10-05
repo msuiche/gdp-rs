@@ -1,7 +1,7 @@
 use core::mem::size_of;
 use std::collections::{BTreeMap, HashMap};
 
-use gdp::{And, Named, Proof};
+use gdp::{And, Named, Or, Proof};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct UserId(u64);
@@ -32,12 +32,8 @@ mod admin {
     ) -> Option<UserIsProjectAdmin<'u, 'p>> {
         (u.0 <= 2).then(|| UserIsProjectAdmin::prove(u, p))
     }
-    // An implication, stated once in the trusted module with `axiom`.
-    impl<'u, 'p> From<UserIsProjectOwner<'u, 'p>> for UserIsProjectAdmin<'u, 'p> {
-        fn from(_: UserIsProjectOwner<'u, 'p>) -> Self {
-            Self::axiom()
-        }
-    }
+    // An implication, stated once in the trusted module.
+    gdp::implies!(UserIsProjectOwner<'u, 'p> => UserIsProjectAdmin<'u, 'p>);
 }
 
 mod team {
@@ -136,7 +132,7 @@ fn kinds_and_reasons_are_reportable() {
 }
 
 #[test]
-fn implications_via_axiom() {
+fn implications_via_implies() {
     gdp::name2(UserId(1), ProjectId(7), |u, p| {
         let owner: UserIsProjectOwner = owner::check(&u, &p).unwrap();
         assert_eq!(admin_only(&p, owner.into()), 7);
@@ -278,4 +274,22 @@ fn justified_slices() {
         assert!(s.first().is_none() && s.last().is_none());
         assert_eq!(s.indices().len(), 0);
     });
+}
+
+#[test]
+fn ad_hoc_disjunction() {
+    fn needs_either<'u, 'p>(_: Or<UserIsProjectAdmin<'u, 'p>, OnTeam<'u, 'p>>) {}
+    gdp::name2(UserId(3), ProjectId(1), |u, p| {
+        let either: Or<UserIsProjectAdmin, OnTeam> = match admin::check(&u, &p) {
+            Some(a) => Or::Left(a),
+            None => Or::Right(team::check(&u, &p).unwrap()),
+        };
+        assert_eq!(either.reason(), "OnTeam");
+        assert_eq!(<Or<UserIsProjectAdmin, OnTeam> as Proof>::KIND, "Or");
+        needs_either(either);
+    });
+    assert_eq!(
+        size_of::<Or<UserIsProjectAdmin<'static, 'static>, OnTeam<'static, 'static>>>(),
+        1
+    );
 }

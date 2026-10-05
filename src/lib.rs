@@ -101,6 +101,13 @@ use core::ops::Deref;
 /// pointers are `Send + Sync + Copy`, so branding never costs you thread
 /// safety or `Copy`.
 #[doc(hidden)]
+pub mod __private {
+    /// Seals [`crate::Proof`]. Implemented by the `proof!` and `policy!`
+    /// expansions. Not public API: implementing it by hand is forging.
+    pub trait Sealed {}
+}
+
+#[doc(hidden)]
 pub type Brand<'id> = PhantomData<fn(&'id ()) -> &'id ()>;
 
 /// A value of type `T` tagged with the compile-time-only name `'id`.
@@ -228,13 +235,14 @@ pub async fn name3_async<A, B, C, R>(
 
 /// Evidence that a fact holds about some names.
 ///
-/// The trait is open: anything `Copy` can implement it, so it is a label for
-/// audit logs, not evidence. Sensitive functions must demand concrete proof
-/// types, never `impl Proof`.
+/// The trait is sealed: only [`proof!`], [`policy!`], [`And`] and [`Or`]
+/// implement it, so a hand-written type cannot pose as a proof in audit logs.
+/// Sensitive functions should still demand concrete proof types rather than
+/// `impl Proof`: the trait says "this is some proof", not "this proof".
 ///
 /// Implemented by every type declared with [`proof!`] or [`policy!`], and by
-/// [`And`]. Proofs are `Copy` and, for primitive proofs, zero-sized.
-pub trait Proof: Copy {
+/// [`And`] and [`Or`]. Proofs are `Copy` and, for primitive proofs, zero-sized.
+pub trait Proof: Copy + __private::Sealed {
     /// The proof's kind, e.g. `"UserIsProjectAdmin"`. Stable across builds,
     /// so it is safe to put in audit logs.
     const KIND: &'static str;
@@ -261,8 +269,31 @@ pub trait Proof: Copy {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct And<A, B>(pub A, pub B);
 
+impl<A: Proof, B: Proof> __private::Sealed for And<A, B> {}
 impl<A: Proof, B: Proof> Proof for And<A, B> {
     const KIND: &'static str = "And";
+}
+
+/// Either `A` or `B` holds: an ad hoc policy, for when a named [`policy!`]
+/// would be overkill. [`Proof::reason`] reports which side held.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum Or<A, B> {
+    /// `A` holds.
+    Left(A),
+    /// `B` holds.
+    Right(B),
+}
+
+impl<A: Proof, B: Proof> __private::Sealed for Or<A, B> {}
+impl<A: Proof, B: Proof> Proof for Or<A, B> {
+    const KIND: &'static str = "Or";
+
+    fn reason(&self) -> &'static str {
+        match self {
+            Or::Left(a) => a.reason(),
+            Or::Right(b) => b.reason(),
+        }
+    }
 }
 
 impl<A, B> And<A, B> {
@@ -331,6 +362,7 @@ macro_rules! proof {
             }
         }
 
+        impl<$($lt),+> $crate::__private::Sealed for $Name<$($lt),+> {}
         impl<$($lt),+> $crate::Proof for $Name<$($lt),+> {
             const KIND: &'static str = ::core::stringify!($Name);
         }
@@ -391,6 +423,7 @@ macro_rules! policy {
 
         $crate::policy!(@from [$($lt),+] $Name; $($Variant $Inner;)+);
 
+        impl<$($lt),+> $crate::__private::Sealed for $Name<$($lt),+> {}
         impl<$($lt),+> $crate::Proof for $Name<$($lt),+> {
             const KIND: &'static str = ::core::stringify!($Name);
 
@@ -398,6 +431,42 @@ macro_rules! policy {
                 match self {
                     $( $Name::$Variant(p) => $crate::Proof::reason(p) ),+
                 }
+            }
+        }
+    };
+}
+
+/// Declares that one proof implies another: every `$From` is also a `$To`.
+///
+/// ```
+/// pub struct UserId;
+/// pub struct ProjectId;
+///
+/// mod owner {
+///     use super::*;
+///     gdp::proof! { pub struct UserIsProjectOwner<'u, 'p>(UserId, ProjectId); }
+/// }
+///
+/// mod admin {
+///     use super::*;
+///     gdp::proof! { pub struct UserIsProjectAdmin<'u, 'p>(UserId, ProjectId); }
+///     // An Owner is always an Admin.
+///     gdp::implies!(super::owner::UserIsProjectOwner<'u, 'p> => UserIsProjectAdmin<'u, 'p>);
+/// }
+/// # fn main() {}
+/// ```
+///
+/// Expands to a `From` impl built on the target's private `axiom()`, so it
+/// only compiles inside the target's trusted module: an implication is a
+/// claim about the target fact, and only its owner may make it. Use `.into()`
+/// at the call site.
+#[macro_export]
+macro_rules! implies {
+    ($From:ty => $To:ident < $($lt:lifetime),+ $(,)? > $(,)?) => {
+        impl<$($lt),+> ::core::convert::From<$From> for $To<$($lt),+> {
+            #[inline(always)]
+            fn from(_: $From) -> Self {
+                Self::axiom()
             }
         }
     };

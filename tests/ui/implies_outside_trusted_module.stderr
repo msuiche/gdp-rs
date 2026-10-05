@@ -1,0 +1,12 @@
+error[E0624]: associated function `axiom` is private
+ --> tests/ui/implies_outside_trusted_module.rs:5:1
+  |
+5 | gdp::implies!(UserHasProjectAccess<'u, 'p> => UserIsProjectAdmin<'u, 'p>);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+  |
+ ::: tests/ui/fixture/mod.rs
+  |
+  |     gdp::proof! { pub struct UserIsProjectAdmin<'u, 'p>(UserId, ProjectId); }
+  |     ------------------------------------------------------------------------- private associated function defined here
+  |
+  = note: this error originates in the macro `gdp::implies` (in Nightly builds, run with -Z macro-backtrace for more info)
