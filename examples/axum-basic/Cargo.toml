@@ -1,0 +1,19 @@
+[package]
+name = "gdp-axum-basic"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+# Standalone: keeps axum and tokio out of the library's dependency graph.
+[workspace]
+
+[dependencies]
+gdp-rs = { path = "../.." }
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "sync"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"

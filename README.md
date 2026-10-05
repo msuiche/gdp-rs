@@ -69,7 +69,7 @@ pub async fn user_is_project_admin<'u, 'p>(
 
 **3. Demand proofs.** Sensitive functions take a proof whose lifetimes match their named arguments. The data layer is safe to export: a route, a job or a CLI can call it, and none of them can skip the check.
 
-See [`examples/password_protection.rs`](examples/password_protection.rs) for the complete gdp-ts example, ported: `cargo run --example password_protection`.
+See [`examples/password_protection.rs`](examples/password_protection.rs) for the complete gdp-ts example, ported (`cargo run --example password_protection`), and [`examples/axum-basic`](examples/axum-basic) for the same thing as an [axum](https://github.com/tokio-rs/axum) service with HTTP-level tests, the counterpart of gdp-ts's `express-basic`. Handler futures stay `Send`, so they run on tokio's multi-threaded runtime.
 
 ## Why Rust is a better fit
 

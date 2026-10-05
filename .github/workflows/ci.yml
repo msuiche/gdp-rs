@@ -35,6 +35,19 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.99.0
       - run: cargo test --test ui
 
+  axum-example:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/axum-basic
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
   msrv:
     runs-on: ubuntu-latest
     steps:

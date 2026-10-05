@@ -1,3 +1,4 @@
 /target
 /wip
 Cargo.lock
+/examples/axum-basic/target
