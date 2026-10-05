@@ -105,6 +105,10 @@ pub mod __private {
     /// Seals [`crate::Proof`]. Implemented by the `proof!` and `policy!`
     /// expansions. Not public API: implementing it by hand is forging.
     pub trait Sealed {}
+
+    /// Seals [`crate::justified::Map`]: evidence from a map is only as honest
+    /// as its lookups, so only the standard maps are accepted.
+    pub trait SealedMap {}
 }
 
 #[doc(hidden)]
@@ -235,10 +239,16 @@ pub async fn name3_async<A, B, C, R>(
 
 /// Evidence that a fact holds about some names.
 ///
-/// The trait is sealed: only [`proof!`], [`policy!`], [`And`] and [`Or`]
-/// implement it, so a hand-written type cannot pose as a proof in audit logs.
-/// Sensitive functions should still demand concrete proof types rather than
-/// `impl Proof`: the trait says "this is some proof", not "this proof".
+/// The trait is sealed by convention: [`proof!`], [`policy!`], [`And`] and
+/// [`Or`] implement it through a `#[doc(hidden)] __private` supertrait. A
+/// crate can still implement that supertrait by hand, but it has to name
+/// `__private` to do so, which is easy to grep for and to reject in review.
+///
+/// This is why sensitive functions demand concrete proof types, never
+/// `impl Proof`: a concrete proof type cannot be forged in safe Rust, while
+/// "some `Proof`" only says something claims to be one. For the same reason,
+/// [`Proof::KIND`] is a label, not an identity: two modules may declare
+/// proofs with the same name. [`Proof::PATH`] is unique per declaration.
 ///
 /// Implemented by every type declared with [`proof!`] or [`policy!`], and by
 /// [`And`] and [`Or`]. Proofs are `Copy` and, for primitive proofs, zero-sized.
@@ -247,8 +257,14 @@ pub trait Proof: Copy + __private::Sealed {
     /// so it is safe to put in audit logs.
     const KIND: &'static str;
 
+    /// The proof's fully qualified path, e.g.
+    /// `"my_app::proofs::user_is_project_admin::UserIsProjectAdmin"`. Unlike
+    /// [`Proof::KIND`], it is unique per declaration.
+    const PATH: &'static str;
+
     /// Why access was granted. For a primitive proof this is [`Proof::KIND`];
-    /// for a [`policy!`] it is the kind of the proof that satisfied it.
+    /// for a [`policy!`] or [`Or`] it is the reason of the proof that
+    /// satisfied it; for [`And`] it is `"And"` (see [`And::reasons`]).
     #[inline(always)]
     fn reason(&self) -> &'static str {
         Self::KIND
@@ -272,6 +288,7 @@ pub struct And<A, B>(pub A, pub B);
 impl<A: Proof, B: Proof> __private::Sealed for And<A, B> {}
 impl<A: Proof, B: Proof> Proof for And<A, B> {
     const KIND: &'static str = "And";
+    const PATH: &'static str = "gdp::And";
 }
 
 /// Either `A` or `B` holds: an ad hoc policy, for when a named [`policy!`]
@@ -287,6 +304,7 @@ pub enum Or<A, B> {
 impl<A: Proof, B: Proof> __private::Sealed for Or<A, B> {}
 impl<A: Proof, B: Proof> Proof for Or<A, B> {
     const KIND: &'static str = "Or";
+    const PATH: &'static str = "gdp::Or";
 
     fn reason(&self) -> &'static str {
         match self {
@@ -307,6 +325,13 @@ impl<A, B> And<A, B> {
     #[inline(always)]
     pub fn right(self) -> B {
         self.1
+    }
+}
+
+impl<A: Proof, B: Proof> And<A, B> {
+    /// The reasons of both conjuncts, for audit logs.
+    pub fn reasons(&self) -> (&'static str, &'static str) {
+        (self.0.reason(), self.1.reason())
     }
 }
 
@@ -365,6 +390,7 @@ macro_rules! proof {
         impl<$($lt),+> $crate::__private::Sealed for $Name<$($lt),+> {}
         impl<$($lt),+> $crate::Proof for $Name<$($lt),+> {
             const KIND: &'static str = ::core::stringify!($Name);
+            const PATH: &'static str = ::core::concat!(::core::module_path!(), "::", ::core::stringify!($Name));
         }
 
         impl<$($lt),+> ::core::fmt::Debug for $Name<$($lt),+> {
@@ -426,6 +452,7 @@ macro_rules! policy {
         impl<$($lt),+> $crate::__private::Sealed for $Name<$($lt),+> {}
         impl<$($lt),+> $crate::Proof for $Name<$($lt),+> {
             const KIND: &'static str = ::core::stringify!($Name);
+            const PATH: &'static str = ::core::concat!(::core::module_path!(), "::", ::core::stringify!($Name));
 
             fn reason(&self) -> &'static str {
                 match self {
@@ -451,10 +478,14 @@ macro_rules! policy {
 ///     use super::*;
 ///     gdp::proof! { pub struct UserIsProjectAdmin<'u, 'p>(UserId, ProjectId); }
 ///     // An Owner is always an Admin.
-///     gdp::implies!(super::owner::UserIsProjectOwner<'u, 'p> => UserIsProjectAdmin<'u, 'p>);
+///     gdp::implies!(<'u, 'p> super::owner::UserIsProjectOwner => UserIsProjectAdmin);
 /// }
 /// # fn main() {}
 /// ```
+///
+/// One lifetime list applies to both sides, in order, so an implication
+/// cannot swap subjects by accident (`Owner<'u, 'p>` implies `Admin<'u, 'p>`,
+/// never `Admin<'p, 'u>`). Both proofs must therefore have the same subjects.
 ///
 /// Expands to a `From` impl built on the target's private `axiom()`, so it
 /// only compiles inside the target's trusted module: an implication is a
@@ -462,10 +493,10 @@ macro_rules! policy {
 /// at the call site.
 #[macro_export]
 macro_rules! implies {
-    ($From:ty => $To:ident < $($lt:lifetime),+ $(,)? > $(,)?) => {
-        impl<$($lt),+> ::core::convert::From<$From> for $To<$($lt),+> {
+    (< $($lt:lifetime),+ $(,)? > $($From:ident)::+ => $To:ident $(,)?) => {
+        impl<$($lt),+> ::core::convert::From<$($From)::+ <$($lt),+>> for $To<$($lt),+> {
             #[inline(always)]
-            fn from(_: $From) -> Self {
+            fn from(_: $($From)::+ <$($lt),+>) -> Self {
                 Self::axiom()
             }
         }

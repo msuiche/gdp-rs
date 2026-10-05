@@ -1,0 +1,13 @@
+error[E0107]: struct takes 1 lifetime argument but 2 lifetime arguments were supplied
+ --> tests/ui/implies_swapped_subjects.rs:8:44
+  |
+8 |     gdp::implies!(<'u, 'p> super::fixture::PlanIncludesProtection => Admin2);
+  |                      ----                  ^^^^^^^^^^^^^^^^^^^^^^ expected 1 lifetime argument
+  |                      |
+  |                      help: remove the lifetime argument
+  |
+note: struct defined here, with 1 lifetime parameter: `'p`
+ --> tests/ui/fixture/mod.rs
+  |
+  |     gdp::proof! { pub struct PlanIncludesProtection<'p>(ProjectId); }
+  |                              ^^^^^^^^^^^^^^^^^^^^^^ --

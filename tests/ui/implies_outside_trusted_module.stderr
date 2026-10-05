@@ -1,8 +1,8 @@
 error[E0624]: associated function `axiom` is private
  --> tests/ui/implies_outside_trusted_module.rs:5:1
   |
-5 | gdp::implies!(UserHasProjectAccess<'u, 'p> => UserIsProjectAdmin<'u, 'p>);
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
+5 | gdp::implies!(<'u, 'p> UserHasProjectAccess => UserIsProjectAdmin);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private associated function
   |
  ::: tests/ui/fixture/mod.rs
   |

@@ -1,0 +1,24 @@
+error[E0277]: the trait bound `Liar: gdp::__private::SealedMap` is not satisfied
+ --> tests/ui/justified_custom_map.rs:4:30
+  |
+4 | impl gdp::justified::Map for Liar {
+  |                              ^^^^ unsatisfied trait bound
+  |
+help: the trait `gdp::__private::SealedMap` is not implemented for `Liar`
+ --> tests/ui/justified_custom_map.rs:2:1
+  |
+2 | struct Liar;
+  | ^^^^^^^^^^^
+help: the following other types implement trait `gdp::__private::SealedMap`
+ --> src/justified.rs
+  |
+  |     impl<K, V> crate::__private::SealedMap for BTreeMap<K, V> {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `BTreeMap<K, V>`
+...
+  |     impl<K, V, S> crate::__private::SealedMap for HashMap<K, V, S> {}
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `HashMap<K, V, S>`
+note: required by a bound in `gdp::justified::Map`
+ --> src/justified.rs
+  |
+  | pub trait Map: crate::__private::SealedMap {
+  |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^ required by this bound in `Map`

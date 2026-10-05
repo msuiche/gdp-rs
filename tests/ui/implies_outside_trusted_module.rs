@@ -2,6 +2,6 @@
 #[path = "fixture/mod.rs"] mod fixture;
 use fixture::*;
 
-gdp::implies!(UserHasProjectAccess<'u, 'p> => UserIsProjectAdmin<'u, 'p>);
+gdp::implies!(<'u, 'p> UserHasProjectAccess => UserIsProjectAdmin);
 
 fn main() {}

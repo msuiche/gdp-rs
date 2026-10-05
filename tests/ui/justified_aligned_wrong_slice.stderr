@@ -7,7 +7,7 @@ error[E0521]: borrowed data escapes outside of closure
   |                                     `a` is a reference that is only valid in the closure body
   |                                     has type `JSlice<'1, '_, i32>`
 ...
-8 |             let i = b.index(0).unwrap();
+8 |             let i = b.check(0).unwrap();
   |                     ^^^^^^^^^^
   |                     |
   |                     `a` escapes the closure body here
@@ -20,7 +20,7 @@ error[E0521]: borrowed data escapes outside of closure
   |             ------- `doubled` declared here, outside of the closure body
 7 |         gdp::justified::with_slice(&b, |b| {
   |                                         - `b` is a reference that is only valid in the closure body
-8 |             let i = b.index(0).unwrap();
+8 |             let i = b.check(0).unwrap();
   |                     ^^^^^^^^^^^^^^^^^^^ `b` escapes the closure body here
   |
   = note: requirement occurs because of the type `gdp::justified::Index<'_>`, which makes the generic argument `'_` invariant

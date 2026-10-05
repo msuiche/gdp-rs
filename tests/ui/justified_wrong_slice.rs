@@ -4,7 +4,7 @@ fn main() {
     let long = [1, 2, 3];
     gdp::justified::with_slice(&long, |long| {
         gdp::justified::with_slice(&short, |short| {
-            let i = long.index(2).unwrap();
+            let i = long.check(2).unwrap();
             short[i];
         })
     });

@@ -33,7 +33,7 @@ mod admin {
         (u.0 <= 2).then(|| UserIsProjectAdmin::prove(u, p))
     }
     // An implication, stated once in the trusted module.
-    gdp::implies!(UserIsProjectOwner<'u, 'p> => UserIsProjectAdmin<'u, 'p>);
+    gdp::implies!(<'u, 'p> UserIsProjectOwner => UserIsProjectAdmin);
 }
 
 mod team {
@@ -252,11 +252,11 @@ fn justified_slices() {
     let v = [10, 20, 30];
     gdp::justified::with_slice(&v, |s| {
         assert_eq!(s.len(), 3);
-        let i = s.index(1).unwrap();
+        let i = s.check(1).unwrap();
         assert_eq!(s[i], 20);
         assert_eq!(*s.get(i), 20);
         assert_eq!(i.get(), 1);
-        assert!(s.index(3).is_none());
+        assert!(s.check(3).is_none());
         assert_eq!(s[s.first().unwrap()], 10);
         assert_eq!(s[s.last().unwrap()], 30);
         assert_eq!(s.next(s.last().unwrap()), None);
@@ -300,7 +300,7 @@ fn justified_aligned_data() {
     gdp::justified::with_slice(&v, |s| {
         let mut lens = s.map(|_, x| x.len());
         assert_eq!(lens.len(), 3);
-        let i = s.index(1).unwrap();
+        let i = s.check(1).unwrap();
         assert_eq!(lens[i], 3);
         lens[i] += 1;
         assert_eq!(*lens.get(i), 4);
@@ -311,5 +311,54 @@ fn justified_aligned_data() {
         assert_eq!(err.err(), Some("bad"));
         assert_eq!(format!("{:?}", lens), "Aligned([1, 4, 2])");
         assert_eq!(lens.into_inner(), vec![1, 4, 2]);
+    });
+}
+
+#[test]
+fn proof_paths_are_unique_and_and_reports_both_reasons() {
+    assert_eq!(
+        <UserIsProjectAdmin as Proof>::PATH,
+        "runtime::admin::UserIsProjectAdmin"
+    );
+    assert_eq!(<CanView as Proof>::PATH, "runtime::CanView");
+    assert_eq!(<And<OnTeam, OnTeam> as Proof>::PATH, "gdp::And");
+    gdp::name2(UserId(1), ProjectId(1), |u, p| {
+        let both = admin::check(&u, &p)
+            .unwrap()
+            .and(team::check(&u, &p).unwrap());
+        assert_eq!(both.reasons(), ("UserIsProjectAdmin", "OnTeam"));
+    });
+}
+
+#[test]
+fn justified_handles_and_extras() {
+    use std::collections::BTreeSet;
+    let m = BTreeMap::from([(2, "b"), (1, "a")]);
+    gdp::justified::with_map(&m, |jm| {
+        let copy = jm; // `Copy` handle
+        let a = jm.member(&1).unwrap();
+        let b = copy.member(&2).unwrap();
+        assert!(a < b && a == jm.member(&1).unwrap());
+        let set: BTreeSet<_> = jm.keys().collect();
+        assert_eq!(set.len(), 2);
+    });
+    let v = ["x", "y", "z"];
+    gdp::justified::with_slice(&v, |s| {
+        let t = s; // `Copy` handle
+        let pairs: Vec<_> = t.enumerate().map(|(i, x)| (i.get(), *x)).collect();
+        assert_eq!(pairs, [(0, "x"), (1, "y"), (2, "z")]);
+        let mut a = s.map(|i, _| i.get());
+        for x in &mut a {
+            *x *= 10;
+        }
+        a.iter_mut().for_each(|x| *x += 1);
+        let doubled = a.map(|_, x| x * 2);
+        let i = s.check(2).unwrap();
+        assert_eq!((a[i], doubled[i]), (21, 42));
+        assert_eq!(a.clone().into_iter().collect::<Vec<_>>(), [1, 11, 21]);
+        assert_eq!((&a).into_iter().count(), 3);
+        let mut idx = s.indices();
+        assert_eq!(idx.len(), 3);
+        assert_eq!(idx.next_back().map(|i| i.get()), Some(2));
     });
 }

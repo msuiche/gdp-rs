@@ -12,29 +12,46 @@ struct Flag {
     deps: Vec<&'static str>,
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum Mark {
+    New,
+    InProgress,
+    Done,
+}
+
 /// Depth-first dependency order. Every lookup here is infallible: `deps`
-/// holds checked indices, built once by the validation pass in `main`.
+/// holds checked indices, built once by the validation pass. The only
+/// possible failure is a property of the graph itself: a cycle.
 fn resolve<'ph>(
     flags: &JSlice<'ph, '_, Flag>,
     deps: &Aligned<'ph, Vec<Index<'ph>>>,
-    visited: &mut Aligned<'ph, bool>,
+    marks: &mut Aligned<'ph, Mark>,
     flag: Index<'ph>,
     out: &mut Vec<&'static str>,
-) {
-    if visited[flag] {
-        return;
+) -> Result<(), String> {
+    match marks[flag] {
+        Mark::Done => return Ok(()),
+        Mark::InProgress => return Err(format!("dependency cycle through {}", flags[flag].name)),
+        Mark::New => {}
     }
-    visited[flag] = true;
+    marks[flag] = Mark::InProgress;
     for &dep in &deps[flag] {
-        resolve(flags, deps, visited, dep, out);
+        resolve(flags, deps, marks, dep, out)?;
     }
+    marks[flag] = Mark::Done;
     out.push(flags[flag].name);
+    Ok(())
 }
 
 fn enable_order(all: &[Flag], root: &str) -> Result<Vec<&'static str>, String> {
     with_slice(all, |flags| {
         // The one fallible pass: resolve every name to a checked index.
-        let by_name: HashMap<&str, Index> = flags.indices().map(|i| (flags[i].name, i)).collect();
+        let mut by_name: HashMap<&str, Index> = HashMap::new();
+        for (i, flag) in flags.enumerate() {
+            if by_name.insert(flag.name, i).is_some() {
+                return Err(format!("duplicate flag {}", flag.name));
+            }
+        }
         let lookup = |name: &str| {
             by_name
                 .get(name)
@@ -50,9 +67,9 @@ fn enable_order(all: &[Flag], root: &str) -> Result<Vec<&'static str>, String> {
         let root = lookup(root)?;
 
         // From here on, nothing can be missing.
-        let mut visited = flags.map(|_, _| false);
+        let mut marks = flags.map(|_, _| Mark::New);
         let mut out = Vec::new();
-        resolve(&flags, &deps, &mut visited, root, &mut out);
+        resolve(&flags, &deps, &mut marks, root, &mut out)?;
         Ok(out)
     })
 }
@@ -81,7 +98,21 @@ fn main() {
         deps: vec!["no-such-flag"],
     });
     println!(
-        "after adding beta-banner: {:?}",
+        "with a dangling edge: {:?}",
+        enable_order(&flags, "checkout-v2")
+    );
+
+    flags.pop();
+    flags[2].deps.push("checkout-v2");
+    println!("with a cycle: {:?}", enable_order(&flags, "checkout-v2"));
+
+    flags[2].deps.pop();
+    flags.push(Flag {
+        name: "new-cart",
+        deps: vec![],
+    });
+    println!(
+        "with a duplicate: {:?}",
         enable_order(&flags, "checkout-v2")
     );
 }

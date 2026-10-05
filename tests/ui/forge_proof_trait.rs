@@ -4,6 +4,7 @@ struct Fake;
 
 impl gdp::Proof for Fake {
     const KIND: &'static str = "UserIsProjectAdmin";
+    const PATH: &'static str = "app::proofs::UserIsProjectAdmin";
 }
 
 fn main() {}
