@@ -9,15 +9,16 @@ repository = "https://github.com/msuiche/gdp-rs"
 readme = "README.md"
 keywords = ["authorization", "types", "proofs", "security", "no_std"]
 categories = ["rust-patterns", "no-std", "authentication"]
+exclude = [".github", "examples/axum-basic"]
 
 [lib]
 name = "gdp"
 
 [features]
 default = ["std"]
-# `justified::JMap` over `BTreeMap`.
+# Justified maps over `BTreeMap`, and `justified::Aligned`.
 alloc = []
-# `justified::JMap` over `HashMap` as well.
+# Justified maps over `HashMap` as well.
 std = ["alloc"]
 
 [dev-dependencies]
@@ -29,3 +30,6 @@ name = "password_protection"
 [[example]]
 name = "justified"
 required-features = ["std"]
+
+[package.metadata.docs.rs]
+all-features = true
