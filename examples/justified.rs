@@ -10,7 +10,7 @@ use gdp::justified::{JMap, Key, with_map};
 /// at a known flag up front, so the traversal never handles a missing key.
 fn resolve<'ph, 'm>(
     flags: &JMap<'ph, 'm, HashMap<&'static str, Vec<&'static str>>>,
-    deps: &[Key<'ph, 'm, &'static str>],
+    deps: &[Key<'ph, 'm, &'static str, Vec<&'static str>>],
     out: &mut Vec<&'static str>,
 ) {
     for &dep in deps {
