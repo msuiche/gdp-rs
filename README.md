@@ -155,11 +155,15 @@ The [gdp-ts recipe](https://github.com/rauchg/gdp-ts/blob/main/skills/gdp-ts/ref
 5. **Name and prove in the handler**, and turn `None` into a 403 / 402.
 6. **Forbid `unsafe`** in application crates, instead of gdp-ts's lint preset.
 
+## Proving the policy with Lean
+
+gdp-rs guarantees the checks *run*. [`lean/`](lean/) proves they are *right*, Cedar-style: a Lean model of the Password Protection policy, nine theorems about it (Viewers can never change protection, `402` only ever reaches entitled admins, anyone who can manage can view, ...), an export of the model's decision for every input, and a differential test that replays each one against the axum service over HTTP. CI checks the proofs, that the exported table matches the model, and that the service matches the table. A policy bug in a Rust trusted module, which gdp-rs's types cannot see, fails that test.
+
 ## What this does not guarantee
 
 - **Dependencies are a trust boundary.** `#![forbid(unsafe_code)]` covers your crate, not your dependencies. A dependency with an unsound "safe" API (say, a generic `conjure<T: Copy>()` built on `mem::zeroed`), or an external `macro_rules!` that expands to `unsafe`, can produce any zero-sized value, proofs included. Both were confirmed with probes. This is the same boundary as `unsafeCoerce` in Haskell; audit `unsafe` in your dependency tree (e.g. with `cargo geiger`).
 - **Demand concrete proof types.** `Proof` is sealed by convention only: a crate can implement the `#[doc(hidden)] __private::Sealed` supertrait by hand (greppable, but it compiles), and `KIND` is a label that two modules may share. `impl Proof` therefore only says "something claims to be a proof". Sensitive functions should name the exact proof type they need; concrete proof types cannot be forged in safe Rust.
-- **The checks themselves are still code you wrote.** gdp-rs guarantees that the check ran, about the right values, on every path to the sensitive call. It does not guarantee that the check is correct. Test the trusted modules; they are small.
+- **The checks themselves are still code you wrote.** gdp-rs guarantees that the check ran, about the right values, on every path to the sensitive call. It does not guarantee that the check is correct. Test the trusted modules; they are small. For high-stakes policies, model them in Lean and differential-test against the model, as [`lean/`](lean/) does for the example.
 - **Trusted modules include their children.** Rust privacy lets child modules call a parent's private functions. Keep proof modules as leaves.
 - **Stale facts about external state.** A proof says the fact held when it was checked. Names are scoped to the request, so proofs are too. Use transactions where a race between check and use matters.
 - **`axiom()` is a promise.** It mints a proof without a check. Only use it for implications that are true by definition.
@@ -170,6 +174,7 @@ The [gdp-ts recipe](https://github.com/rauchg/gdp-ts/blob/main/skills/gdp-ts/ref
 - Matt Noonan, [Ghosts of Departed Proofs](https://kataskeue.com/gdp.pdf) and [`gdp`](https://hackage.haskell.org/package/gdp) (2018), and [`justified-containers`](https://hackage.haskell.org/package/justified-containers) (2017).
 - Ollie Charles, [Who Authorized These Ghosts!?](https://blog.ocharles.org.uk/posts/2019-08-09-who-authorized-these-ghosts.html) (2019).
 - Aria Beingessner, [*You Can't Spell Trust Without Rust*](https://faultlore.com/blah/papers/thesis.pdf) (2015), on generativity via invariant lifetimes, and bluss's [`indexing`](https://github.com/bluss/indexing) crate.
+- The Cedar team at AWS, [How We Built Cedar: A Verification-Guided Approach](https://arxiv.org/abs/2407.01688) (2024), the model-plus-differential-testing approach `lean/` follows.
 - Yanovski, Dang, Jung, Dreyer, [GhostCell](https://plv.mpi-sws.org/rustbelt/ghostcell/) (ICFP 2021), which uses the same branded-lifetime technique.
 
 ## License

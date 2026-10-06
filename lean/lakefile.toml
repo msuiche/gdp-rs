@@ -1,0 +1,10 @@
+name = "gdp-policy"
+version = "0.1.0"
+defaultTargets = ["GdpPolicy", "export"]
+
+[[lean_lib]]
+name = "GdpPolicy"
+
+[[lean_exe]]
+name = "export"
+root = "Export"

@@ -9,7 +9,7 @@ repository = "https://github.com/msuiche/gdp-rs"
 readme = "README.md"
 keywords = ["authorization", "types", "proofs", "security", "no_std"]
 categories = ["rust-patterns", "no-std", "authentication"]
-exclude = [".github", "examples/axum-basic"]
+exclude = [".github", "examples/axum-basic", "lean"]
 
 [lib]
 name = "gdp"

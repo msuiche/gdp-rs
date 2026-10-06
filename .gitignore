@@ -2,3 +2,4 @@
 /wip
 Cargo.lock
 /examples/axum-basic/target
+/lean/.lake

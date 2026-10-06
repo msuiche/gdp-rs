@@ -48,6 +48,27 @@ jobs:
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
 
+  lean-model:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check every proof
+        working-directory: lean
+        run: lake build
+      - name: decisions.csv is up to date with the model
+        working-directory: lean
+        run: |
+          lake exe export > decisions.csv
+          git diff --exit-code decisions.csv
+      - uses: dtolnay/rust-toolchain@stable
+      - name: The service matches the model
+        working-directory: examples/axum-basic
+        run: cargo test --test model
+
   msrv:
     runs-on: ubuntu-latest
     steps:
